@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import ApperIcon from '@/components/ApperIcon';
 import { Button } from '@/components/ui/button';
 import {
@@ -10,12 +10,15 @@ import {
 } from '@/lib/messWorksheet';
 
 const smallButton = 'h-8 rounded-sm px-2 text-xs shadow-none transition-colors duration-[var(--transition-fast)] focus-visible:ring-2 focus-visible:ring-ring';
-function BatchAdd({ item, section, onAdd }) {
+function BatchAdd({ item, section, onAdd, renderCells }) {
   const [quantity, setQuantity] = useState(0);
   const [rate, setRate] = useState(0);
   const [validation, setValidation] = useState('');
-  return (
-    <form className="no-print mt-2 grid grid-cols-[1fr_1fr_auto] gap-1 border-t border-border pt-2" onSubmit={event => {
+  const formId = useId();
+  const quantityInput = <LedgerNumber form={formId} value={quantity} onChange={setQuantity} label={`${item.Name} ${section === 'previous_c' ? 'previous' : 'received'} batch quantity`} />;
+  const rateInput = <LedgerNumber form={formId} value={rate} onChange={setRate} label={`${item.Name} batch rate in rupees`} />;
+  const form = (
+    <form id={formId} className={`no-print mt-2 border-t border-border pt-2 ${renderCells ? '' : 'grid grid-cols-[1fr_1fr_auto] gap-1'}`} onSubmit={event => {
       event.preventDefault();
       if (quantity <= 0 || rate <= 0) {
         setValidation('Enter a quantity and rate greater than zero.');
@@ -26,20 +29,21 @@ function BatchAdd({ item, section, onAdd }) {
       setRate(0);
       setValidation('');
     }}>
-      <div className="space-y-2">
+      {!renderCells && <div className="space-y-2 min-w-0">
         <label className="sr-only" htmlFor={`quantity-${item.Id}-${section}`}>Batch quantity</label>
-        <LedgerNumber value={quantity} onChange={setQuantity} label={`${item.Name} ${section === 'previous_c' ? 'previous' : 'received'} batch quantity`} />
-      </div>
-      <div className="space-y-2">
+        {quantityInput}
+      </div>}
+      {!renderCells && <div className="space-y-2 min-w-0">
         <label className="sr-only">Batch rate</label>
-        <LedgerNumber value={rate} onChange={setRate} label={`${item.Name} batch rate in rupees`} />
-      </div>
+        {rateInput}
+      </div>}
       <Button type="submit" title="Add batch" aria-label={`Add ${section === 'previous_c' ? 'previous-month' : 'received'} batch for ${item.Name}`} className={`${smallButton} h-11 bg-primary text-primary-foreground hover:bg-primary/90 md:h-8`}>
         <ApperIcon name="Plus" className="h-3 w-3" />
       </Button>
       {validation && <p role="alert" className="col-span-3 text-xs text-destructive">{validation}</p>}
     </form>
   );
+  return renderCells ? renderCells({ quantityInput, rateInput, form }) : form;
 }
 function RemoveBatch({ item, section, batch, onRemove }) {
   return (
@@ -140,10 +144,11 @@ export default function InventoryGrid({ computed, onAddBatch, onRemoveBatch, onE
                 {item.sections_c.flatMap((batches, sectionIndex) => {
                   const editable = sectionIndex < 2;
                   const section = sectionIndex === 0 ? 'previous_c' : 'received_c';
-                  return [
+                  const renderCells = ({ quantityInput, rateInput, form } = {}) => [
                     <td key={`${sectionIndex}-qty`} className={`section-start ledger-numeric text-right ${sectionIndex === 3 && item.shortage_c > 0 ? 'overdraw-cell' : ''}`}>
                       <div className="amount-total">{fixed(batchQuantity(batches))}</div>
                       {(batches ?? []).map((batch, i) => <div className="batch-line" key={`${batch.Id}-${i}`}>{fixed(batch.quantity_c)}</div>)}
+                      {quantityInput && <div className="no-print mt-2 min-w-0 border-t border-border pt-2">{quantityInput}</div>}
                       {sectionIndex === 3 && <>
                         <div className="no-print mt-2 hidden space-y-2 border-t border-border pt-2 md:block">
                           <label className="block text-left font-sans text-[10px] text-muted-foreground">Consumed · {item.unit_c}</label>
@@ -156,7 +161,7 @@ export default function InventoryGrid({ computed, onAddBatch, onRemoveBatch, onE
                     <td key={`${sectionIndex}-rate`} className="ledger-numeric text-right">
                       <div className="amount-total">{fixed(weightedRate(batches))}</div>
                       {(batches ?? []).map((batch, i) => <div className="batch-line" key={`${batch.Id}-${i}`}>{fixed(batch.rate_c)}</div>)}
-                      {editable && <p className="no-print mt-3 text-[10px] text-muted-foreground">Qty + rate →</p>}
+                      {rateInput && <div className="no-print mt-2 min-w-0 border-t border-border pt-2">{rateInput}</div>}
                     </td>,
                     <td key={`${sectionIndex}-amount`} className="ledger-numeric text-right">
                       <div className="amount-total">{money(batchAmount(batches))}</div>
@@ -164,9 +169,12 @@ export default function InventoryGrid({ computed, onAddBatch, onRemoveBatch, onE
                         {money(batch.quantity_c * batch.rate_c)}
                         {editable && <RemoveBatch item={item} section={section} batch={batch} onRemove={onRemoveBatch} />}
                       </div>)}
-                      {editable && <BatchAdd item={item} section={section} onAdd={onAddBatch} />}
+                      {form}
                     </td>,
                   ];
+                  return editable
+                    ? <BatchAdd key={sectionIndex} item={item} section={section} onAdd={onAddBatch} renderCells={renderCells} />
+                    : renderCells();
                 })}
               </tr>
             ))}

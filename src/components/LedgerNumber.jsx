@@ -3,7 +3,7 @@ import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { fixed, numeric } from '@/lib/messWorksheet';
 
-export default function LedgerNumber({ value, onChange, label, className, readOnly = false }) {
+export default function LedgerNumber({ value, onChange, label, className, readOnly = false, form }) {
   const [draft, setDraft] = useState(fixed(value));
   const [focused, setFocused] = useState(false);
   useEffect(() => {
@@ -14,6 +14,7 @@ export default function LedgerNumber({ value, onChange, label, className, readOn
       type="text"
       inputMode="decimal"
       aria-label={label}
+      form={form}
       readOnly={readOnly}
       value={draft}
       onFocus={() => setFocused(true)}
