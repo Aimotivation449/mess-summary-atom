@@ -28,6 +28,53 @@ export function monthDays(month) {
   const [year, m] = String(month).split('-').map(Number);
   return new Date(year, m, 0).getDate();
 }
+export function nextMonth(month) {
+  const [year, m] = String(month).split('-').map(Number);
+  return `${m === 12 ? year + 1 : year}-${String(m === 12 ? 1 : m + 1).padStart(2, '0')}`;
+}
+
+export function buildCarryForward(source, target) {
+  const closing = calculate(source);
+  if (target.month_c !== nextMonth(source.month_c)) {
+    throw new Error('Carry-forward must target the next calendar month.');
+  }
+  if (closing.overdraw_c || closing.fresh_balance_c < 0) {
+    throw new Error('Correct stock overdraw and the negative fresh-ration balance before carrying forward.');
+  }
+  const items = [...(target.items_c ?? [])];
+  const changes = [];
+  const matched = new Set();
+  closing.items_c.forEach(item => {
+    const candidates = items.filter(row => String(row.Id) === String(item.Id)
+      || (row.Name.trim().toLocaleLowerCase() === item.Name.trim().toLocaleLowerCase()
+        && row.unit_c === item.unit_c));
+    if (candidates.length > 1 || (candidates[0] && matched.has(candidates[0].Id))) {
+      throw new Error(`Resolve duplicate next-month entries for ${item.Name} before carrying forward.`);
+    }
+    const existing = candidates[0];
+    if (existing && existing.unit_c !== item.unit_c) {
+      throw new Error(`The next-month unit for ${item.Name} differs. Correct it before carrying forward.`);
+    }
+    const batches = item.sections_c[4].map(batch => ({ ...batch, Id: crypto.randomUUID() }));
+    if (!existing && !batches.length) return;
+    const updated = existing
+      ? { ...existing, previous_c: batches }
+      : { Id: item.Id, Name: item.Name, unit_c: item.unit_c, previous_c: batches, received_c: [], expenditure_c: 0 };
+    if (existing) {
+      matched.add(existing.Id);
+      items[items.indexOf(existing)] = updated;
+    } else items.push(updated);
+    changes.push({
+      Id: updated.Id, Name: updated.Name, unit_c: updated.unit_c,
+      existing_c: Boolean(existing), previous_c: existing?.previous_c ?? [], batches_c: batches,
+    });
+  });
+  return {
+    worksheet_c: { ...target, items_c: items, fresh_previous_c: closing.fresh_balance_c },
+    changes_c: changes, fresh_before_c: target.fresh_previous_c,
+    fresh_after_c: closing.fresh_balance_c,
+  };
+}
 export function blankWorksheet(month) {
   return {
     month_c: month,

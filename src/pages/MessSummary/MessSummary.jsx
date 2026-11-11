@@ -5,12 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
   UNITS, blankWorksheet, calculate, currentMonth, readWorksheet,
-  STORAGE_PREFIX, monthLabel, round2, money,
+  STORAGE_PREFIX, monthLabel, round2, money, nextMonth, buildCarryForward,
 } from '@/lib/messWorksheet';
 import { exportExcel, exportPdf, exportCsv } from '@/lib/messExports';
 import InventoryGrid from './InventoryGrid';
 import SummaryPanels from './SummaryPanels';
 import FinancialLedgers from './FinancialLedgers';
+import CarryForwardPreview from './CarryForwardPreview';
 import '@/styles/ledger.css';
 
 export const route = { path: '/', layout: 'public', access: 'public' };
@@ -28,6 +29,7 @@ export default function MessSummary() {
   const [storageError, setStorageError] = useState('');
   const [saveStatus, setSaveStatus] = useState('Loading worksheet');
   const [exporting, setExporting] = useState('');
+  const [carryPreview, setCarryPreview] = useState(null);
   const nameInput = useRef(null);
   const savedOnce = useRef(false);
   const lastStorageError = useRef('');
@@ -158,6 +160,40 @@ export default function MessSummary() {
     ...previous, [key]: previous[key].filter(row => String(row.Id) !== String(id)),
   }));
 
+  const previewCarryForward = () => {
+    try {
+      const targetMonth = nextMonth(worksheet.month_c);
+      const raw = localStorage.getItem(STORAGE_PREFIX + targetMonth);
+      const target = readWorksheet(targetMonth);
+      const plan = buildCarryForward(worksheet, target.worksheet_c);
+      setCarryPreview({
+        ...plan, source_month_c: worksheet.month_c,
+        restored_c: target.restored_c, target_raw_c: raw,
+      });
+    } catch (error) {
+      toast.error(`Carry-forward preview unavailable: ${error.message}`);
+      console.error(`Carry-forward preview failed: ${error.message}`);
+    }
+  };
+  const confirmCarryForward = () => {
+    if (!carryPreview) return;
+    try {
+      const targetMonth = carryPreview.worksheet_c.month_c;
+      if (localStorage.getItem(STORAGE_PREFIX + targetMonth) !== carryPreview.target_raw_c) {
+        setCarryPreview(null);
+        throw new Error('The next-month worksheet changed after this preview. Open a new preview before confirming.');
+      }
+      localStorage.setItem(STORAGE_PREFIX + worksheet.month_c, JSON.stringify(worksheet));
+      localStorage.setItem(STORAGE_PREFIX + targetMonth, JSON.stringify(carryPreview.worksheet_c));
+      setCarryPreview(null);
+      setMonth(targetMonth);
+      toast.success(`Opening balances carried forward to ${monthLabel(targetMonth)}.`);
+    } catch (error) {
+      toast.error(`Carry-forward failed: ${error.message}`);
+      console.error(`Monthly worksheet carry-forward failed: ${error.message}`);
+    }
+  };
+
   const runExport = async kind => {
     if (computed.overdraw_c || computed.fresh_balance_c < 0) {
       toast.error('Correct stock overdraw before exporting the summary.');
@@ -226,7 +262,11 @@ export default function MessSummary() {
               <ApperIcon name="Plus" className="mr-1 h-3 w-3" /> Add New Item
             </Button>
           </form>
-          <div className="grid grid-cols-3 gap-2 xl:flex">
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" variant="outline" disabled={loading || !ready || Boolean(exporting)} onClick={previewCarryForward}
+              className={`${controlButton} border-border bg-background text-foreground hover:border-primary hover:bg-accent active:scale-[0.98]`}>
+              <ApperIcon name="ArrowRight" className="mr-1 h-3 w-3" /> Carry forward
+            </Button>
             {['Excel', 'PDF', 'CSV'].map(kind => (
               <Button key={kind} type="button" variant="outline" disabled={loading || !ready || Boolean(exporting)} onClick={() => runExport(kind)}
                 className={`${controlButton} border-border bg-background text-foreground hover:border-primary hover:bg-accent`}>
@@ -288,6 +328,7 @@ export default function MessSummary() {
           </Button>
         </div>
       </main>
+      {carryPreview && <CarryForwardPreview preview={carryPreview} onClose={() => setCarryPreview(null)} onConfirm={confirmCarryForward} />}
       <footer className="no-print fixed inset-x-0 bottom-0 z-[var(--z-sticky)] border-t-[3px] border-double border-primary bg-card pb-[env(safe-area-inset-bottom)] shadow-[var(--shadow-md)]">
         <div className="mx-auto flex max-w-[1920px] flex-wrap items-center justify-between gap-3 px-4 py-3 md:px-7">
           <div className="hidden text-xs text-muted-foreground md:block"><p className="font-semibold text-foreground">{monthLabel(worksheet.month_c)}</p><p>Live monthly closing figures</p></div>
