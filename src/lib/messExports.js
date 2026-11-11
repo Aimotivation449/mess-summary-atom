@@ -9,11 +9,6 @@ const column = n => {
   for (n += 1; n > 0; n = Math.floor((n - 1) / 26)) out = String.fromCharCode(65 + (n - 1) % 26) + out;
   return out;
 };
-const column = n => {
-  let out = '';
-  for (n += 1; n > 0; n = Math.floor((n - 1) / 26)) out = String.fromCharCode(65 + (n - 1) % 26) + out;
-  return out;
-};
 function themeColor(key, fallback) {
   const value = getComputedStyle(document.documentElement).getPropertyValue(key).trim();
   return /^#[0-9a-f]{6}$/i.test(value) ? value.slice(1).toUpperCase() : fallback;
