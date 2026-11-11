@@ -229,7 +229,7 @@ export default function MessSummary() {
 
   return (
     <div className="min-h-screen bg-background text-[14px] text-foreground">
-      <header className="print-header sticky top-0 z-[var(--z-sticky)] border-b border-border bg-background shadow-[var(--shadow-sm)]">
+      <header className="print-header border-b border-border bg-background shadow-[var(--shadow-sm)]">
         <div className="border-b-4 border-warning bg-gradient-to-r from-primary to-secondary px-4 py-5 pr-44 md:px-7 md:py-6 md:pr-48">
           <p className="mb-2 text-[10px] font-semibold tracking-[0.08em] text-primary-foreground">सीमा सुरक्षा बल • BORDER SECURITY FORCE</p>
           <div className="flex items-start gap-3">
@@ -278,7 +278,7 @@ export default function MessSummary() {
         </div>
       </header>
 
-      <main className="print-root mx-auto max-w-[1920px] space-y-6 px-4 pb-28 pt-4 md:px-7 md:pb-24">
+      <main className="print-root mx-auto max-w-[1920px] space-y-6 px-4 py-4 md:px-7">
         <div className="no-print flex flex-wrap items-center justify-between gap-3 border-l-4 border-primary bg-secondary px-4 py-3 text-xs">
           <p className="max-w-3xl leading-relaxed text-secondary-foreground"><strong>Working register.</strong> Figures calculate as you type. Edits are saved separately for each month on this browser only — export a copy for the official record. No account or server storage is used.</p>
           <span className={`flex items-center gap-1 font-semibold ${storageError ? 'text-destructive' : 'text-primary'}`} role="status">
@@ -329,7 +329,7 @@ export default function MessSummary() {
         </div>
       </main>
       {carryPreview && <CarryForwardPreview preview={carryPreview} onClose={() => setCarryPreview(null)} onConfirm={confirmCarryForward} />}
-      <footer className="no-print fixed inset-x-0 bottom-0 z-[var(--z-sticky)] border-t-[3px] border-double border-primary bg-card pb-[env(safe-area-inset-bottom)] shadow-[var(--shadow-md)]">
+      <footer className="no-print border-t-[3px] border-double border-primary bg-card pb-[env(safe-area-inset-bottom)] shadow-[var(--shadow-md)]">
         <div className="mx-auto flex max-w-[1920px] flex-wrap items-center justify-between gap-3 px-4 py-3 md:px-7">
           <div className="hidden text-xs text-muted-foreground md:block"><p className="font-semibold text-foreground">{monthLabel(worksheet.month_c)}</p><p>Live monthly closing figures</p></div>
           <div className="flex flex-1 items-center justify-between gap-5 md:flex-none md:gap-10">
