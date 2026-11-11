@@ -1,0 +1,106 @@
+.ledger-numeric {
+  font-family: var(--font-heading);
+  font-variant-numeric: tabular-nums;
+}
+.ledger-table {
+  width: 100%;
+  min-width: 1580px;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 12px;
+}
+.ledger-table th,
+.ledger-table td {
+  border: 1px solid var(--border);
+  padding: 7px 6px;
+  vertical-align: top;
+}
+.ledger-table .section-start {
+  border-left: 3px double var(--primary);
+}
+.ledger-table thead th {
+  background: var(--secondary);
+  color: var(--secondary-foreground);
+}
+.ledger-table thead tr:first-child th {
+  border-top: 3px double var(--primary);
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+.ledger-table .item-cell {
+  position: sticky;
+  left: 0;
+  z-index: 12;
+  background: var(--card);
+  box-shadow: 2px 0 0 var(--border);
+}
+.ledger-table thead .item-cell {
+  z-index: 15;
+  background: var(--secondary);
+}
+.ledger-table .amount-total {
+  min-height: 28px;
+  text-align: right;
+  font-weight: 700;
+}
+.ledger-table .batch-line {
+  height: 31px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 3px;
+  color: var(--muted-foreground);
+}
+.ledger-table .overdraw-cell {
+  background: color-mix(in srgb, var(--destructive) 9%, var(--card));
+  transition: background var(--transition-fast);
+}
+.ledger-warning {
+  animation: ledger-shake 300ms ease-in-out;
+}
+@keyframes ledger-shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-4px); }
+  40%, 80% { transform: translateX(4px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ledger-warning { animation: none; }
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+@page { size: A3 landscape; margin: 10mm; }
+@media print {
+  html, body {
+    background: var(--card) !important;
+    color: var(--foreground) !important;
+    font-size: 10px;
+  }
+  .no-print { display: none !important; }
+  .print-header { position: static !important; }
+  .print-header > div { padding: 10px 0 !important; }
+  .print-root { padding: 0 !important; max-width: none !important; }
+  .print-table-wrap { overflow: visible !important; border: 0 !important; }
+  .ledger-table { min-width: 0; font-size: 8px; }
+  .ledger-table th, .ledger-table td { padding: 3px 2px; }
+  .ledger-table .item-cell { position: static; box-shadow: none; }
+  .ledger-table thead { display: table-header-group; }
+  .ledger-table tfoot { display: table-row-group; }
+  .ledger-table tr { break-inside: avoid; }
+  .ledger-table .batch-line { height: 16px; }
+  .ledger-table .amount-total { min-height: 17px; }
+  .print-panels { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
+  .ledger-panel { break-inside: avoid; box-shadow: none !important; padding: 10px !important; }
+  .ledger-panel input {
+    border: 0 !important;
+    background: transparent !important;
+    padding: 0 !important;
+    height: 20px !important;
+    color: var(--foreground) !important;
+  }
+  .print-heading { font-size: 19px !important; }
+  .print-total { position: static !important; }
+  * { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+}
